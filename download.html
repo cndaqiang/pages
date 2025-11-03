@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>下载 autowzry-cli 最新版本</title>
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  text-align: center;
+  margin-top: 50px;
+  background: #f0f2f5;
+  padding: 0 10px; /* 小屏留边 */
+}
+h2 {
+  color: #333;
+  margin-bottom: 30px;
+}
+
+/* 按钮样式 */
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #28a745; /* 下载按钮绿色 */
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  font-size: 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin: 10px auto;
+  width: 90%;         /* 响应式宽度 */
+  max-width: 400px;   /* 大屏限制 */
+  min-width: 200px;   /* 小屏限制 */
+  text-align: left;
+  gap: 10px;
+  transition: all 0.2s;
+}
+.button:hover {
+  opacity: 0.9;
+}
+
+/* 不同用途的按钮颜色 */
+.button-src { background-color: #fd7e14; }   /* 橙色 */
+.button-tutorial { background-color: #007bff; } /* 蓝色 */
+
+/* 下载进度条 */
+#progressContainer {
+  width: 90%;
+  max-width: 400px;
+  min-width: 200px;
+  height: 20px;
+  background: #ddd;
+  border-radius: 10px;
+  margin: 10px auto 20px auto;
+  overflow: hidden;
+}
+#progressBar {
+  height: 100%;
+  width: 0%;
+  background: #0078d7;
+  border-radius: 10px;
+  transition: width 0.2s;
+}
+#status {
+  font-size: 14px;
+  color: #333;
+  margin-top: 5px;
+}
+
+/* 小屏优化字体 */
+@media (max-width: 400px) {
+  .button {
+    font-size: 14px;
+    padding: 12px 18px;
+  }
+  #status {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+<body>
+<h2>下载 autowzry-cli 最新版本</h2>
+
+<!-- Windows 下载 -->
+<button id="downloadWin" class="button">🖥️ 下载可执行包 Windows </button>
+<div id="progressContainer"><div id="progressBar"></div></div>
+<div id="status">准备下载...</div>
+
+<!-- Linux/macOS 源码 -->
+<button id="downloadSrc" class="button button-src">🐧 下载源码 Linux/macOS  </button>
+
+<!-- 教程按钮 -->
+<button id="tutorial1" class="button button-tutorial">📘 Windows系统教程</button>
+<button id="tutorial2" class="button button-tutorial">📗 源代码运行教程</button>
+
+<script>
+// ✅ 下载带进度条
+async function downloadWithProgress(url, filename) {
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progressBar');
+  status.textContent = '开始下载...';
+  progressBar.style.width = '0%';
+
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('下载失败');
+
+  const contentLength = resp.headers.get('Content-Length');
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+  const reader = resp.body.getReader();
+  const chunks = [];
+  let received = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (total) {
+      const percent = ((received / total) * 100).toFixed(1);
+      status.textContent = `下载中：${percent}%`;
+      progressBar.style.width = `${percent}%`;
+    } else {
+      status.textContent = `下载中：${(received / 1024).toFixed(1)} KB`;
+    }
+  }
+
+  const blob = new Blob(chunks);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  status.textContent = '下载完成！';
+  progressBar.style.width = '100%';
+}
+
+// ✅ Windows 下载按钮
+async function downloadWinLatest() {
+  try {
+    const resp = await fetch(`https://pypi.org/pypi/autowzry-cli/json?ts=${Date.now()}`, { cache: 'no-store' });
+    const data = await resp.json();
+
+    // 找 Windows amd64 wheel
+    const file = data.urls.find(f => f.url.includes('win_amd64') && f.url.endsWith('.whl'));
+    if (!file) {
+      alert('未找到 Windows wheel');
+      return;
+    }
+
+    const version = data.info.version;
+    const filename = `autowzry-cli-${version}.zip`;
+
+    await downloadWithProgress(file.url, filename);
+  } catch (err) {
+    console.error(err);
+    alert('下载出错，请稍后重试');
+  }
+}
+
+// ✅ Linux/macOS 源码下载（固定 URL）
+function downloadSrc() {
+  window.open("https://github.com/cndaqiang/autowzry/tree/dev", "_blank");
+}
+
+// ✅ 教程跳转
+function openTutorial1() {
+  window.open("https://cndaqiang.github.io/wzry.doc/guide/install/", "_blank");
+}
+function openTutorial2() {
+  window.open("https://cndaqiang.github.io/wzry.doc/guide/pyinstall/", "_blank");
+}
+
+// 绑定按钮
+document.getElementById('downloadWin').addEventListener('click', downloadWinLatest);
+document.getElementById('downloadSrc').addEventListener('click', downloadSrc);
+document.getElementById('tutorial1').addEventListener('click', openTutorial1);
+document.getElementById('tutorial2').addEventListener('click', openTutorial2);
+</script>
+</body>
+</html>
